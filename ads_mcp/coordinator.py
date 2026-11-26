@@ -27,6 +27,7 @@ from fastmcp_tasks import TasksExtension
 from mcp import types as mcp_types
 from mcp.server.subscriptions import InMemorySubscriptionBus, ListenHandler
 from ads_mcp.audit import AuditMiddleware
+from ads_mcp.auth0 import create_auth0_provider, is_auth0_mode
 from ads_mcp.auth_storage import (
     create_audit_storage,
     create_client_storage,
@@ -38,7 +39,11 @@ _CLIENT_SECRET = os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET")
 _BASE_URL = os.environ.get("GOOGLE_ADS_MCP_BASE_URL", "http://localhost:8080")
 _JWT_SIGNING_KEY = os.environ.get("GOOGLE_ADS_MCP_JWT_SIGNING_KEY")
 
-if _CLIENT_ID and _CLIENT_SECRET:
+if is_auth0_mode():
+    # Auth0 sign-in; each tool call runs with the user's own Google token
+    # from Auth0 Token Vault (see ads_mcp/auth0.py and ads_mcp/token_vault.py).
+    mcp = FastMCP("Google Ads Server", auth=create_auth0_provider())
+elif _CLIENT_ID and _CLIENT_SECRET:
     client_storage = create_client_storage()
     provider_kwargs: dict[str, Any] = {
         "client_id": _CLIENT_ID,

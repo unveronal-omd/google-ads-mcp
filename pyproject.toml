@@ -9,6 +9,9 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [
     "google-ads>=33.0.0",
+    # Auth0 Token Vault exchange and connect flow (ads_mcp/token_vault.py,
+    # ads_mcp/connect.py).
+    "httpx>=0.28,<1",
     "mcp[cli]>=2.0.0,<3",
     "fastmcp[tasks]>=4.0.6,<5"
 ]

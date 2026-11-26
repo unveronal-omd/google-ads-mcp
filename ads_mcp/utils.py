@@ -37,6 +37,8 @@ from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import Message as PbMessage
 import proto
 
+from ads_mcp import token_vault
+from ads_mcp.auth0 import is_auth0_mode
 from ads_mcp.mcp_header_interceptor import MCPHeaderInterceptor
 
 # filename for generated field information used by search
@@ -62,7 +64,7 @@ class MutateOperation(str, Enum):
 
 def is_remote_oauth_mode() -> bool:
     """Returns True when the server is configured to run in remote OAuth HTTP mode."""
-    return bool(
+    return is_auth0_mode() or bool(
         os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_ID")
         and os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET")
     )
@@ -104,6 +106,18 @@ def _create_credentials() -> google.auth.credentials.Credentials:
     from google.oauth2.credentials import Credentials
 
     token_obj = get_access_token()
+
+    if is_auth0_mode():
+        # Remote calls always run as the signed-in user. There is deliberately
+        # no fallback to Application Default Credentials.
+        if not (token_obj and token_obj.token and token_obj.subject):
+            raise token_vault.GoogleTokenError("Not signed in.")
+        google_token = token_vault.get_google_access_token(
+            user_id=token_obj.subject,
+            auth0_access_token=token_obj.token,
+        )
+        return Credentials(token=google_token)
+
     if token_obj and token_obj.token:
         # Create credentials using the access token provided by FastMCP
         return Credentials(token=token_obj.token)
