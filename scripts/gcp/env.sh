@@ -2,8 +2,24 @@
 # Shared settings for the Cloud Run deployment scripts.
 # Source this file; do not execute it. Every value can be overridden from the
 # environment, e.g. `REGION=europe-west1 ./scripts/gcp/01_bootstrap.sh`.
+#
+# Deployment-specific values (project, Auth0 tenant and client IDs) are not
+# committed: copy env.local.example.sh to env.local.sh (git-ignored) and fill
+# it in.
 
-PROJECT_ID="${PROJECT_ID:-mcp-servers-513807}"
+_ENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${_ENV_DIR}/env.local.sh" ]]; then
+  # shellcheck source=/dev/null
+  source "${_ENV_DIR}/env.local.sh"
+fi
+for _var in PROJECT_ID PROJECT_NUMBER AUTH0_DOMAIN AUTH0_CONNECT_CLIENT_ID \
+  AUTH0_TOKEN_VAULT_CLIENT_ID; do
+  if [[ -z "${!_var:-}" ]]; then
+    echo "${_var} is not set; see scripts/gcp/env.local.example.sh" >&2
+    exit 1
+  fi
+done
+
 REGION="${REGION:-europe-west3}"
 REPO="${REPO:-mcp-servers}"
 SERVICE="${SERVICE:-google-ads-mcp}"
@@ -30,15 +46,8 @@ SECRETS=(
 )
 
 # Cloud Run URL is deterministic: <service>-<project number>.<region>.run.app.
-PROJECT_NUMBER="${PROJECT_NUMBER:-873842938799}"
 SERVICE_URL="${SERVICE_URL:-https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${SERVICE}"
-
-# Auth0 (shared tenant; see docs/cloud-run-auth0-plan.md). Client IDs are not
-# secret; the client secrets live in Secret Manager.
-AUTH0_DOMAIN="${AUTH0_DOMAIN:-dev-qcfguwv7uyogdyng.us.auth0.com}"
-AUTH0_CONNECT_CLIENT_ID="${AUTH0_CONNECT_CLIENT_ID:-Mm9Kpj7Cdu0OuHHV2wYow47O4SdlVTUh}"
-AUTH0_TOKEN_VAULT_CLIENT_ID="${AUTH0_TOKEN_VAULT_CLIENT_ID:-QQjCfGiYCiLsB44iHI34hHXNVmqQPZ8c}"
 
 # All gcloud calls pass --project explicitly so the caller's default
 # gcloud configuration is never changed.

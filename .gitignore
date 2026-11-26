@@ -37,3 +37,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 .nox/
+# Deployment-specific settings and internal rollout notes (not public)
+scripts/gcp/env.local.sh
+docs/cloud-run-auth0-plan.md
+.DS_Store
